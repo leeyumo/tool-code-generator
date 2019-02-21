@@ -1,6 +1,7 @@
 package com.leeyumo.tool.code.generator;
 
 import com.google.common.collect.Sets;
+import com.leeyumo.tool.code.generator.util.Description;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;

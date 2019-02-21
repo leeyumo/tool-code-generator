@@ -1,4 +1,4 @@
-package com.leeyumo.tool.code.generator.creator;
+package com.leeyumo.tool.code.generator.updater;
 
 import com.google.auto.service.AutoService;
 import com.google.common.collect.Sets;
@@ -24,17 +24,17 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toMap;
 
 @AutoService(Processor.class)
-public class GenerateCreatorProcessor extends BaseProcessor<GenerateCreator> {
-    public GenerateCreatorProcessor() {
-        super(GenerateCreator.class);
+public class GenerateUpdaterProcessor extends BaseProcessor<GenerateUpdater> {
+    public GenerateUpdaterProcessor() {
+        super(GenerateUpdater.class);
     }
 
     @Override
-    protected void foreachClass(GenerateCreator generateCreator, Element element, RoundEnvironment roundEnv) {
+    protected void foreachClass(GenerateUpdater generateUpdater, Element element, RoundEnvironment roundEnv) {
         String packageName = element.getEnclosingElement().toString() ;
-        String className = "Base" + element.getSimpleName().toString() + "Creator";
+        String className = "Base" + element.getSimpleName().toString() + "Updater";
 
-        String parentClassName = getParentClassName(generateCreator, element);
+        String parentClassName = getParentClassName(generateUpdater, element);
 
         Set<TypeAndName> publicSetter = findPublicSetter(element);
 
@@ -83,7 +83,7 @@ public class GenerateCreatorProcessor extends BaseProcessor<GenerateCreator> {
                     .build();
             typeSpecBuilder.addField(fieldSpec);
 
-            //生成builder属性方法，目的是可以连环调用给creator各个属性赋值
+            //生成builder属性方法，目的是可以连环调用给Updater各个属性赋值
             MethodSpec methodSpec = MethodSpec.methodBuilder(typeAndName.getName())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(TypeVariableName.get("T"))
@@ -176,14 +176,14 @@ public class GenerateCreatorProcessor extends BaseProcessor<GenerateCreator> {
 
     private FieldConfig toFieldConfig(VariableElement element){
         String name = element.getSimpleName().toString();
-        boolean ignore = element.getAnnotation(GenerateCreatorIgnore.class) != null;
+        boolean ignore = element.getAnnotation(GenerateUpdaterIgnore.class) != null;
         Description description = element.getAnnotation(Description.class);
         String descriptionVar = description == null ? "" : description.value();
         return new FieldConfig(name, ignore, descriptionVar);
     }
 
-    private String getParentClassName(GenerateCreator generateCreator, Element element) {
-        String parent = generateCreator.parent();
+    private String getParentClassName(GenerateUpdater generateUpdater, Element element) {
+        String parent = generateUpdater.parent();
         if (StringUtils.isNotEmpty(parent)){
             return parent;
         }
@@ -193,20 +193,19 @@ public class GenerateCreatorProcessor extends BaseProcessor<GenerateCreator> {
             if (Object.class.getName().equals(superClass)){
                 return null;
             }else if(!typeElement.getSuperclass().toString().contains("BaseEntity")){
-                return getPackageName(typeElement.getSuperclass().toString()) + ".BaseSuper" + getSuperClassName(typeElement.getSuperclass().toString()) +"Creator";
+                return getPackageName(typeElement.getSuperclass().toString()) + ".BaseSuper" + getSuperClassName(typeElement.getSuperclass().toString()) +"Updater";
             }
             else {
-                return convertToCreator(superClass);
+                return convertToUpdater(superClass);
             }
         }
         return null;
     }
 
-    private String convertToCreator(String superClass) {
+    private String convertToUpdater(String superClass) {
 //        String pkgName = superClass.substring(0, superClass.lastIndexOf('.'));
 //        String clsName = superClass.substring(superClass.lastIndexOf('.') + 1, superClass.length());
 //        return pkgName + ".updater.Base" + clsName + "Updater";
-        return Constants.CREATOR_PARENT_PATH;
+        return Constants.UPDATER_PARENT_PATH;
     }
-
 }

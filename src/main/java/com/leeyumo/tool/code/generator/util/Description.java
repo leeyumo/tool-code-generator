@@ -1,4 +1,4 @@
-package com.leeyumo.tool.code.generator;
+package com.leeyumo.tool.code.generator.util;
 
 import java.lang.annotation.*;
 
