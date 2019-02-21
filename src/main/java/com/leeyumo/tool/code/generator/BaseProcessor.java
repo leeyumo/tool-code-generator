@@ -156,7 +156,7 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
         }
 
         public TypeAndName(ExecutableElement executableElement,String description) {
-            this.name = getFieldName(executableElement.getSimpleName().toString());
+            this.name = BaseProcessor.getFieldNameFromGetter(executableElement.getSimpleName().toString());
             this.type = TypeName.get(executableElement.getReturnType());
             this.description = description;
         }
@@ -167,9 +167,10 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
             this.description = "";
         }
 
-        private String getFieldName(String s) {
-            return BaseProcessor.getFieldNameFromGetter(s);
-        }
+//        private String getFieldNameBySetter(String s) {
+//            return BaseProcessor.getFieldNameFromGetter(s);
+//        }
+
         private String getDescription(Description description){
             return description != null ? description.value() : "";
         }

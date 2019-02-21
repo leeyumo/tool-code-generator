@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toMap;
 
 @AutoService(Processor.class)
-public class GenCreatorProcessor extends BaseProcessor<GenerateCreator> {
-    public GenCreatorProcessor() {
+public class GenerateCreatorProcessor extends BaseProcessor<GenerateCreator> {
+    public GenerateCreatorProcessor() {
         super(GenerateCreator.class);
     }
 
@@ -65,8 +65,10 @@ public class GenCreatorProcessor extends BaseProcessor<GenerateCreator> {
             String targetSetterName = "set" + typeAndName.getName().substring(0, 1).toUpperCase() + typeAndName.getName().substring(1, typeAndName.getName().length());
             acceptMethodBuilder.addStatement("this.$L(target::$L)", acceptMethodName, targetSetterName);
 
-            ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get(DataOptional.class), typeAndName.getType());
-            FieldSpec fieldSpec = FieldSpec.builder(parameterizedTypeName, typeAndName.getName(), Modifier.PRIVATE)
+            //生成属性声明
+//            ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(ClassName.get(DataOptional.class), typeAndName.getType());
+//            FieldSpec fieldSpec = FieldSpec.builder(parameterizedTypeName, typeAndName.getName(), Modifier.PRIVATE)
+            FieldSpec fieldSpec = FieldSpec.builder(typeAndName.getType(), typeAndName.getName(), Modifier.PRIVATE)
                     .addAnnotation(AnnotationSpec.builder(Setter.class)
                             .addMember("value", "$T.PRIVATE", AccessLevel.class)
                             .build())
@@ -80,31 +82,37 @@ public class GenCreatorProcessor extends BaseProcessor<GenerateCreator> {
                     .build();
             typeSpecBuilder.addField(fieldSpec);
 
+            //生成builder属性方法，目的是可以连环调用给creator各个属性赋值
             MethodSpec methodSpec = MethodSpec.methodBuilder(typeAndName.getName())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(TypeVariableName.get("T"))
                     .addParameter(typeAndName.getType(), typeAndName.getName())
-                    .addStatement("this.$L = DataOptional.of($L)", typeAndName.getName(), typeAndName.getName())
+//                    .addStatement("this.$L = DataOptional.of($L)", typeAndName.getName(), typeAndName.getName())
+                    .addStatement("this.$L = $L", typeAndName.getName(), typeAndName.getName())
                     .addStatement("return (T) this")
                     .build();
             typeSpecBuilder.addMethod(methodSpec);
 
 
+            //生成通过lambda表达式为目标单个属性赋值的方法，目的是在调用此方法时同时调用lambda中的::对应的set方法
             ParameterizedTypeName consumerTypeName = ParameterizedTypeName.get(ClassName.get(Consumer.class), typeAndName.getType());
             MethodSpec applyMethodSpec = MethodSpec.methodBuilder(acceptMethodName)
                     .addModifiers(Modifier.PUBLIC)
-                    .returns(TypeVariableName.get("T"))
+//                    .returns(TypeVariableName.get("T"))
+                    .returns(TypeName.VOID)
                     .addParameter(consumerTypeName, "consumer")
                     .addCode(CodeBlock.builder()
                             .add("if(this.$L != null){ \n", typeAndName.getName())
-                            .add("\tconsumer.accept(this.$L.getValue());\n", typeAndName.getName())
+//                            .add("\tconsumer.accept(this.$L.getValue());\n", typeAndName.getName())
+                            .add("\tconsumer.accept(this.$L);\n", typeAndName.getName())
                             .add("}\n")
                             .build())
-                    .addStatement("return (T) this")
+//                    .addStatement("return (T) this")
                     .build();
             typeSpecBuilder.addMethod(applyMethodSpec);
         }
 
+        //生成最后的核心accept方法，为目标对象各个属性赋值
         typeSpecBuilder.addMethod(acceptMethodBuilder.build());
 
         createJavaFile(typeSpecBuilder, packageName);
@@ -124,20 +132,7 @@ public class GenCreatorProcessor extends BaseProcessor<GenerateCreator> {
                 .map(element1 -> {
                     String fieldName = getFieldNameFromSetter(element1.getSimpleName().toString());
                     BaseProcessor.FieldConfig fieldConfig = configMap.get(fieldName);
-                    String fieldDescr = fieldConfig != null ? fieldConfig.getDescription() : "";
-                    boolean fieldIgnore = fieldConfig != null ? fieldConfig.isIgnore() : false;
-
-                    GenerateCreatorIgnore genVOIgnore = element1.getAnnotation(GenerateCreatorIgnore.class);
-                    boolean ignore = fieldIgnore || (genVOIgnore != null) ;
-
-                    Description description= element1.getAnnotation(Description.class);
-                    String descr = description != null ? description.value() : fieldDescr;
-
-                    if (ignore){
-                        return null;
-                    }else {
-                        return new TypeAndName(element1, descr);
-                    }
+                    return getTypeAndNameByFieldConfig(fieldConfig,element1);
                 }).filter(typeAndName -> typeAndName != null)
                 .collect(Collectors.toSet());
         result.addAll(getterMethodResult);
@@ -154,13 +149,7 @@ public class GenCreatorProcessor extends BaseProcessor<GenerateCreator> {
                     }).map(element1 -> {
                         String fieldName = getFieldNameFromSetter(element1.getSimpleName().toString());
                         BaseProcessor.FieldConfig fieldConfig = configMap.get(fieldName);
-                        String fieldDescr = fieldConfig != null ? fieldConfig.getDescription() : "";
-                        boolean fieldIgnore = fieldConfig != null ? fieldConfig.isIgnore() : false;
-                        if (fieldIgnore){
-                            return null;
-                        }else {
-                            return new TypeAndName(element1, fieldDescr);
-                        }
+                        return getTypeAndNameByFieldConfig(fieldConfig,element1);
                     }).filter(typeAndName -> typeAndName != null)
                     .collect(Collectors.toSet());
             result.addAll(lombokSetter);
@@ -168,12 +157,28 @@ public class GenCreatorProcessor extends BaseProcessor<GenerateCreator> {
         return result;
     }
 
+    private TypeAndName getTypeAndNameByFieldConfig(BaseProcessor.FieldConfig fieldConfig,Element element){
+        boolean fieldIgnore = fieldConfig != null ? fieldConfig.isIgnore() : false;
+        if (fieldIgnore){
+            return null;
+        }else {
+            String fieldDescription = fieldConfig != null ? fieldConfig.getDescription() : "";
+            if (element instanceof VariableElement) {
+                return new TypeAndName((VariableElement) element, fieldDescription);
+            }else if(element instanceof ExecutableElement){
+                return new TypeAndName((ExecutableElement) element, fieldDescription);
+            }else {
+                return null;
+            }
+        }
+    }
+
     private FieldConfig toFieldConfig(VariableElement element){
         String name = element.getSimpleName().toString();
         boolean ignore = element.getAnnotation(GenerateCreatorIgnore.class) != null;
         Description description = element.getAnnotation(Description.class);
-        String descr = description == null ? "" : description.value();
-        return new FieldConfig(name, ignore, descr);
+        String descriptionVar = description == null ? "" : description.value();
+        return new FieldConfig(name, ignore, descriptionVar);
     }
 
     private String getParentClassName(GenerateCreator generateCreator, Element element) {
