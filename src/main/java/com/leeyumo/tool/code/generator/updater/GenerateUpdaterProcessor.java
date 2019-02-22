@@ -31,7 +31,7 @@ public class GenerateUpdaterProcessor extends BaseProcessor<GenerateUpdater> {
 
     @Override
     protected void foreachClass(GenerateUpdater generateUpdater, Element element, RoundEnvironment roundEnv) {
-        String packageName = element.getEnclosingElement().toString() ;
+        String packageName = element.getEnclosingElement().toString() + ".updater";
         String className = "Base" + element.getSimpleName().toString() + "Updater";
 
         String parentClassName = getParentClassName(generateUpdater, element);

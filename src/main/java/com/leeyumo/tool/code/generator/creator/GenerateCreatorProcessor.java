@@ -31,7 +31,7 @@ public class GenerateCreatorProcessor extends BaseProcessor<GenerateCreator> {
 
     @Override
     protected void foreachClass(GenerateCreator generateCreator, Element element, RoundEnvironment roundEnv) {
-        String packageName = element.getEnclosingElement().toString() ;
+        String packageName = element.getEnclosingElement().toString() + ".creator";
         String className = "Base" + element.getSimpleName().toString() + "Creator";
 
         String parentClassName = getParentClassName(generateCreator, element);
