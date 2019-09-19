@@ -18,14 +18,15 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public abstract class BaseProcessor<A extends Annotation> extends AbstractProcessor {
-    protected final Class aClass;
-    protected Filer filer;
+    private final Class<A> aClass;
+    private Filer filer;
 
     public BaseProcessor(Class<A> aClass) {
         this.aClass = aClass;
@@ -50,9 +51,9 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Set<Element> elements = roundEnv.getElementsAnnotatedWith(this.aClass);
+        Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(this.aClass);
         for (Element element : ElementFilter.typesIn(elements)) {
-            A a = (A) element.getAnnotation(this.aClass);
+            A a = element.getAnnotation(this.aClass);
             foreachClass(a, element, roundEnv);
 
         }
@@ -69,8 +70,7 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
     }
 
     protected Set<VariableElement> findFields(Element element) {
-        return ElementFilter.fieldsIn(element.getEnclosedElements()).stream()
-                .collect(Collectors.toSet());
+        return new HashSet<>(ElementFilter.fieldsIn(element.getEnclosedElements()));
     }
 
     protected Set<TypeAndName> findGetter(Element element, Predicate<Element> filter) {
@@ -84,14 +84,14 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
 
     protected Set<ExecutableElement> findGetter(Element element) {
         return ElementFilter.methodsIn(element.getEnclosedElements()).stream()
-                .filter(executableElement -> isGetter(executableElement))
+                .filter(this::isGetter)
                 .collect(Collectors.toSet());
 
     }
 
     protected Set<ExecutableElement> findSetter(Element element){
         return ElementFilter.methodsIn(element.getEnclosedElements()).stream()
-                .filter(executableElement -> isSetter(executableElement))
+                .filter(this::isSetter)
                 .collect(Collectors.toSet());
     }
 
@@ -113,14 +113,14 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
         return s.startsWith("is") || s.startsWith("get");
     }
 
-    protected <I extends Annotation> Predicate<Element> filterForIgorne(Class<I> iClass) {
+    protected <I extends Annotation> Predicate<Element> filterForIgnore(Class<I> iClass) {
         return new IgnoreFilter<I>(iClass);
     }
 
     protected static class IgnoreFilter<I extends Annotation> implements Predicate<Element> {
         private final Class<I> iClass;
 
-        public IgnoreFilter(Class<I> iClass) {
+        IgnoreFilter(Class<I> iClass) {
             this.iClass = iClass;
         }
 
@@ -137,7 +137,7 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
                     .addFileComment(" This codes are generated automatically. Don't modify!")
                     .build();
             javaFile.writeTo(filer);
-            System.out.println(javaFile);
+//            System.out.println(javaFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -167,10 +167,6 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
             this.type = type;
             this.description = "";
         }
-
-//        private String getFieldNameBySetter(String s) {
-//            return BaseProcessor.getFieldNameFromGetter(s);
-//        }
 
         private String getDescription(Description description){
             return description != null ? description.value() : "";
@@ -215,8 +211,7 @@ public abstract class BaseProcessor<A extends Annotation> extends AbstractProces
     }
 
     protected String getSuperClassName(String superClass){
-        String clsName = superClass.substring(superClass.lastIndexOf('.') + 1, superClass.length());
-        return clsName;
+        return superClass.substring(superClass.lastIndexOf('.') + 1);
     }
 
     protected String getPackageName(String superClass){

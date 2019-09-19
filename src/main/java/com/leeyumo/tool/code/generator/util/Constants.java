@@ -8,4 +8,5 @@ public class Constants {
 
     public static final String VO_PARENT_PATH = "com.leeyumo.tool.code.generator.vo.BaseAbstractEntityVO";
 
+    public static final String CONVERT_LONG_TO_INSTANT_METHOD = "longConvertInstant";
 }

@@ -14,7 +14,9 @@ import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.*;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,10 +35,6 @@ public class GenerateVOProcessor extends BaseProcessor<GenerateVO> {
 
     private void genVo(GenerateVO generateVO, Element element) {
         String className = "Base" + element.getSimpleName().toString() + "VO";
-//        String packageName = generateVO.pkgName();
-//        if (StringUtils.isEmpty(packageName)){
-//            packageName = element.getEnclosingElement().toString() + ".vo";
-//        }
         String packageName = element.getEnclosingElement().toString() + ".vo";
         String parentClassName = getParentClassName(generateVO, element);
 
@@ -62,13 +60,15 @@ public class GenerateVOProcessor extends BaseProcessor<GenerateVO> {
         }
 
         for (TypeAndName typeAndName : typeAndNames) {
-            FieldSpec fieldSpec = FieldSpec.builder(typeAndName.getType(), typeAndName.getName(), Modifier.PRIVATE)
-                    .addAnnotation(AnnotationSpec.builder(Setter.class)
-                            .addMember("value", "$T.PUBLIC", AccessLevel.class)
-                            .build())
-                    .addAnnotation(AnnotationSpec.builder(Getter.class)
-                            .addMember("value", "$T.PUBLIC", AccessLevel.class)
-                            .build())
+            TypeName typeNameToGen = typeAndName.getType();
+            String instantConstructorSuffix = "";
+            //处理Java8时间戳类型的instant情况
+            if (Objects.equals(TypeName.get(Instant.class),typeAndName.getType())){
+                typeNameToGen = TypeName.get(Long.class);
+                instantConstructorSuffix = ".toEpochMilli()";
+            }
+
+            FieldSpec fieldSpec = FieldSpec.builder(typeNameToGen, typeAndName.getName(), Modifier.PRIVATE)
                     .addAnnotation(AnnotationSpec.builder(ApiModelProperty.class)
                             .addMember("value", "$S",typeAndName.getDescription())
                             .addMember("name", "$S", typeAndName.getName())
@@ -78,7 +78,7 @@ public class GenerateVOProcessor extends BaseProcessor<GenerateVO> {
 
             String fieldName = typeAndName.getName().substring(0, 1).toUpperCase() + typeAndName.getName().substring(1, typeAndName.getName().length());
 
-            cMethodSpecBuilder.addStatement("this.set$L(source.get$L())", fieldName, fieldName);
+            cMethodSpecBuilder.addStatement("this.set$L(source.get$L()$L)", fieldName, fieldName, instantConstructorSuffix);
 
         }
 
