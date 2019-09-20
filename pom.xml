@@ -9,7 +9,6 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.leeyumo</groupId>
     <artifactId>tool-code-generator</artifactId>
     <version>1.0-SNAPSHOT</version>
     <properties>
@@ -17,6 +16,11 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.leeyumo</groupId>
             <artifactId>twelve-commons</artifactId>
@@ -32,6 +36,7 @@
             <artifactId>auto-service</artifactId>
             <version>1.0-rc2</version>
         </dependency>
+
     </dependencies>
 
     <build>
