@@ -49,7 +49,7 @@ public abstract class BasePersistenceProcessor<A extends Annotation> extends Bas
         result.addAll(getterMethodResult);
 
         // 对lombok的Set方法进行处理
-        if (element.getAnnotation(Data.class) != null){
+        if (element.getAnnotation(Data.class) != null || element.getAnnotation(Setter.class) != null){
             Set<TypeAndName> lombokSetter = findFields(element).stream()
                     .filter(element1 -> {
                         String filedName = element1.getSimpleName().toString();
@@ -134,6 +134,17 @@ public abstract class BasePersistenceProcessor<A extends Annotation> extends Bas
                             .build())
                     .build();
             typeSpecBuilder.addField(fieldSpec);
+
+            //生成builder属性方法，目的是可以连环调用给creator各个属性赋值
+//            MethodSpec methodSpec = MethodSpec.methodBuilder(typeAndName.getName())
+//                    .addModifiers(Modifier.PUBLIC)
+//                    .returns(TypeVariableName.get("T"))
+//                    .addParameter(typeNameToGen, typeAndName.getName())
+////                    .addStatement("this.$L = DataOptional.of($L)", typeAndName.getName(), typeAndName.getName())
+//                    .addStatement("this.$L = $L", typeAndName.getName(), typeAndName.getName())
+//                    .addStatement("return (T) this")
+//                    .build();
+//            typeSpecBuilder.addMethod(methodSpec);
 
             //生成通过lambda表达式为目标单个属性赋值的方法，目的是在调用此方法时同时调用lambda中的::对应的set方法
             ParameterizedTypeName consumerTypeName = ParameterizedTypeName.get(ClassName.get(Consumer.class), typeNameToGen);

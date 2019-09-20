@@ -145,8 +145,8 @@ public class GenerateVOProcessor extends BaseProcessor<GenerateVO> {
 //        System.out.println(result+"##");
 
         // 对lombok方法进行处理
-        if (element.getAnnotation(Data.class) != null || element.getAnnotation(Value.class) != null){
-            Set<TypeAndName> lomboxGetter = findFields(element).stream()
+        if (element.getAnnotation(Data.class) != null || element.getAnnotation(Value.class) != null || element.getAnnotation(Getter.class) != null){
+            Set<TypeAndName> lombokGetters = findFields(element).stream()
                     .filter(element1 -> {
                         String filedName = element1.getSimpleName().toString();
                         return getterMethodResult.stream().noneMatch(typeAndName -> typeAndName.getName().equals(filedName));
@@ -166,7 +166,7 @@ public class GenerateVOProcessor extends BaseProcessor<GenerateVO> {
                 }
             }).filter(typeAndName -> typeAndName != null)
                     .collect(Collectors.toSet());
-            result.addAll(lomboxGetter);
+            result.addAll(lombokGetters);
         }
         return result;
     }
