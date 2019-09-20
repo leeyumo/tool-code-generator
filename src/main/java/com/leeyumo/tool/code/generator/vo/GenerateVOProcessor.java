@@ -100,7 +100,7 @@ public class GenerateVOProcessor extends BaseProcessor<GenerateVO> {
             String superClass = typeElement.getSuperclass().toString();
             if (Object.class.getName().equals(superClass)){
                 return null;
-            }else if(!typeElement.getSuperclass().toString().contains("BaseEntity")){
+            }else if(!typeElement.getSuperclass().toString().contains(Constants.ABSTRACT_BASE_ENTITY_NAME)){
                 //如果父类不是JpaAggregate 继续迭代
                 //Set<TypeAndName> parentTypeAndNames = findPublicGetter(typeElement);
                 //genVo(generateVO,typeElement);

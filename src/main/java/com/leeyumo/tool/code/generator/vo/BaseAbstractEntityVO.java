@@ -1,17 +1,13 @@
 package com.leeyumo.tool.code.generator.vo;
 
-import com.leeyumo.common.models.BaseEntity;
+import com.leeyumo.twelve.commons.entity.AbstractBaseEntity;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 
 @Data
 public class BaseAbstractEntityVO {
-    @ApiModelProperty(
-            value = "数据版本",
-            name = "version"
-    )
-    private int version;
+
     @ApiModelProperty(
             value = "主键",
             name = "id"
@@ -27,12 +23,17 @@ public class BaseAbstractEntityVO {
             name = "updatedAt"
     )
     private Long updatedAt;
+    @ApiModelProperty(
+            value = "逻辑删除标识",
+            name = "deleted"
+    )
+    private Boolean deleted;
 
-    protected BaseAbstractEntityVO(BaseEntity source) {
-        this.setVersion(source.getVersion());
+    protected BaseAbstractEntityVO(AbstractBaseEntity source) {
         this.setId(source.getId());
         this.setCreatedAt(source.getCreatedAt().toEpochMilli());
         this.setUpdatedAt(source.getUpdatedAt().toEpochMilli());
+        this.setDeleted(source.getDeleted());
     }
 
     protected BaseAbstractEntityVO() {

@@ -59,7 +59,7 @@ public class GenerateUpdaterProcessor extends BasePersistenceProcessor<GenerateU
             String superClass = typeElement.getSuperclass().toString();
             if (Object.class.getName().equals(superClass)){
                 return null;
-            }else if(!typeElement.getSuperclass().toString().contains("BaseEntity")){
+            }else if(!typeElement.getSuperclass().toString().contains(Constants.ABSTRACT_BASE_ENTITY_NAME)){
                 return getPackageName(typeElement.getSuperclass().toString()) + ".BaseSuper" + getSuperClassName(typeElement.getSuperclass().toString()) +"Updater";
             }
             else {
